@@ -77,7 +77,7 @@ def parse_line_data(conn_id, blob):
 def format_cef(data):
     """Returns an appropriately formatted CEF string."""
     # The format function replaces the {name} tokens with the values from data.
-    return """CEF:0|mozilla|openldap|1.0|{login_outcome}||6|src={ip} cs1={bind_name} suser={user} cs1Label=BindId cn1={conn_id}""".format(
+    return """CEF:0|mozilla|openldap|1.0|{login_outcome}||6|src={ip} cs1={bind_name} suser={user} cs1Label=BindId cn1={conn_id} cn1Label=ConnId""".format(
         conn_id=data.get("conn_id", "NOCONN"),
         login_outcome=data.get("login_outcome", "not found"),
         ip=data.get("ip", ""),
