@@ -10,7 +10,6 @@ from pprint import pprint
 # Sample blob of line text
 #
 
-# Oct 10 13:13:13 ldapmaster1 slapd[11268]: conn=10505080 fd=43 ACCEPT from IP=10.8.70.118:52862 (IP=0.0.0.0:389)  Oct 10 13:13:13 ldapmaster1 slapd[11268]: conn=10505080 op=0 EXT oid=1.3.6.1.4.1.1466.20037  Oct 10 13:13:13 ldapmaster1 slapd[11268]: conn=10505080 op=0 STARTTLS  Oct 10 13:13:13 ldapmaster1 slapd[11268]: conn=10505080 op=0 RESULT oid= err=0 text=  Oct 10 13:13:13 ldapmaster1 slapd[11268]: conn=10505080 fd=43 TLS established tls_ssf=256 ssf=256  Oct 10 13:13:13 ldapmaster1 slapd[11268]: conn=10505080 op=1 BIND dn="uid=replicator,ou=logins,dc=mozilla" method=128  Oct 10 13:13:13 ldapmaster1 slapd[11268]: conn=10505080 op=1 BIND dn="uid=replicator,ou=logins,dc=mozilla" mech=SIMPLE ssf=0  Oct 10 13:13:13 ldapmaster1 slapd[11268]: conn=10505080 op=1 RESULT tag=97 err=0 text=  Oct 10 13:13:13 ldapmaster1 slapd[11268]: conn=10505080 op=2 MOD dn="mail=eparker@mozilla.com,o=com,dc=mozilla"  Oct 10 13:13:13 ldapmaster1 slapd[11268]: conn=10505080 op=2 MOD attr=pwdFailureTime pwdUniqueAttempts  Oct 10 13:13:13 ldapmaster1 slapd[11268]: conn=10505080 op=2 RESULT tag=103 err=50 text=
 
 ip_reg            = re.compile(r'ACCEPT from IP=(\d+\.\d+\.\d+\.\d+):')
 bind_name_reg     = re.compile(r'BIND dn="uid=(.*?),')
