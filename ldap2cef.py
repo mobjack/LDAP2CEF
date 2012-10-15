@@ -88,7 +88,7 @@ def format_cef(data):
 
 
 def usage():
-    print 'test.py -i <inputfile> -o <outputfile>'
+    print 'ldap2cef.py -i <inputlog>'
 
 
 def main(argv):
@@ -122,7 +122,7 @@ def main(argv):
             connections[id] += " " + line + " "
 
     # Setup the output file
-    outfile = open('cef.log', 'w+')
+    #outfile = open('cef.log', 'w+')
     
     # Iterate through the key:values in the connections dictionary and
     # process each group of log data.
@@ -137,4 +137,3 @@ def main(argv):
 
 if __name__ == '__main__':
     main(sys.argv[1:])
-    #main(sys.argv[1:])
