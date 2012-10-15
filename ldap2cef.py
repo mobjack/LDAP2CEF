@@ -8,9 +8,6 @@ import getopt
 from pprint import pprint
 
 
-#print getopt.getopt([
-
-
 ip_reg            = re.compile(r'ACCEPT from IP=(\d+\.\d+\.\d+\.\d+):')
 bind_name_reg     = re.compile(r'BIND dn="uid=(.*?),')
                     #dn="mail=xxxx@mozilla.com,o=com,dc=mozilla"
@@ -88,7 +85,27 @@ def format_cef(data):
         user=data.get("user", "Unknown")
     )
 
-def main():
+
+
+def usage():
+    print 'test.py -i <inputfile> -o <outputfile>'
+
+
+def main(argv):
+    inputfile = ''
+    try:
+       #opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+       opts, args = getopt.getopt(argv,"hi:",["ifile="])
+    except getopt.GetoptError:
+       usage()
+       sys.exit(2)
+    for opt, arg in opts:
+       if opt == '-h':
+          usage()
+          sys.exit()
+       elif opt in ("-i", "--ifile"):
+          inputfile = arg
+
     # Set up the main data structure, values will default to a new string.
     connections = defaultdict(str)
 
@@ -96,7 +113,8 @@ def main():
     # dictionary keyed on the connection id.  The value will be the
     # concatenation of all related lines in one big blob.
     #for line in open('ldap.log'):
-    for line in open('../ldap-logs/ldap-big.log'):
+    #for line in open('../ldap-logs/ldap-big.log'):
+    for line in open(inputfile):
         line = line.strip()
         id = get_connection_id(line)
         if id:
@@ -116,8 +134,7 @@ def main():
             print format_cef(data)
             print "-----" 
 
+
 if __name__ == '__main__':
-    main()
-
-
-
+    main(sys.argv[1:])
+    #main(sys.argv[1:])
