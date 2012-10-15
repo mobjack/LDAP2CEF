@@ -4,11 +4,11 @@
 from collections import defaultdict
 import sys
 import re
+import getopt
 from pprint import pprint
 
-#
-# Sample blob of line text
-#
+
+#print getopt.getopt([
 
 
 ip_reg            = re.compile(r'ACCEPT from IP=(\d+\.\d+\.\d+\.\d+):')
@@ -96,7 +96,7 @@ def main():
     # dictionary keyed on the connection id.  The value will be the
     # concatenation of all related lines in one big blob.
     #for line in open('ldap.log'):
-    for line in open('ldap-big.log'):
+    for line in open('../ldap-logs/ldap-big.log'):
         line = line.strip()
         id = get_connection_id(line)
         if id:
