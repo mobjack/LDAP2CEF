@@ -5,6 +5,7 @@ from collections import defaultdict
 import sys
 import re
 import getopt
+import time, datetime
 from pprint import pprint
 
 
@@ -14,6 +15,7 @@ bind_name_reg     = re.compile(r'BIND dn="uid=(.*?),')
 #user_reg          = re.compile(r'dn="mail=(.*?),')
 user_reg          = re.compile(r'mail=(.*?@mozilla.com)\)')
 login_outcome_reg = re.compile(r'err=(\d+) ')
+date_reg          = re.compile(r'(\w+)\s+(\d+)\s+(\d+):(\d+):(\d+)')
 
 def get_connection_id(line):
     """"Parses the conn=xxxxx ID from the string of text.
@@ -59,6 +61,12 @@ def parse_line_data(conn_id, blob):
     if login_outcome_match:
         ret_dat["login_outcome"] = login_outcome_match.group(1)
 
+    date_match = re.search(date_reg, blob)
+    date_epoch = epoch(date_match.group(0))
+    if date_epoch:
+        ret_dat["date_end"] = date_epoch
+    #print date_match.group(0)
+    #print date_epoch
 
     return_anything = False # an easy to flip config knob
                             # for producing partially filled
@@ -68,7 +76,8 @@ def parse_line_data(conn_id, blob):
  
     # Only return data if we found all the pieces
     # remember we added the conn_id, so total is 5
-    if(len(ret_dat.keys()) == 5):
+    #if(len(ret_dat.keys()) == 5):
+    if(len(ret_dat.keys()) == 6):
         #print(ret_dat) #turn this on to see exactly what was extracted.
         return ret_dat    
     else:
@@ -77,14 +86,32 @@ def parse_line_data(conn_id, blob):
 def format_cef(data):
     """Returns an appropriately formatted CEF string."""
     # The format function replaces the {name} tokens with the values from data.
-    return """CEF:0|mozilla|openldap|1.0|{login_outcome}||6|src={ip} cs1={bind_name} suser={user} cs1Label=BindId cn1={conn_id} cn1Label=ConnId""".format(
+    return """CEF:0|mozilla|openldap|1.0|{login_outcome}||6|src={ip} cs1={bind_name} suser={user} cs1Label=BindId cn1={conn_id} cn1Label=ConnId end={end}""".format(
         conn_id=data.get("conn_id", "NOCONN"),
         login_outcome=data.get("login_outcome", "not found"),
         ip=data.get("ip", ""),
         bind_name=data.get("bind_name", "None"),
-        user=data.get("user", "Unknown")
+        user=data.get("user", "Unknown"),
+        end=data.get("date_end", "Unknown")
     )
 
+def epoch(mydate):
+    #print mydate
+  
+    curryear = datetime.datetime.now().year
+    date_reg = re.search(r'(\w+)\s+(\d+)\s+(\d+):(\d+):(\d+)', mydate)
+    logmonth = time.strptime(date_reg.group(1), '%b').tm_mon
+    logday = int(date_reg.group(2))
+    loghour = int(date_reg.group(3))
+    logmin = int(date_reg.group(4))
+    logsec = int(date_reg.group(5))
+   
+    #print curryear, logmonth, logday, loghour, logmin, logsec
+  
+    ltime = (curryear, logmonth, logday, loghour, logmin, logsec, 0, 0, -7)
+    eptime = time.mktime(ltime)
+    #print eptime
+    return eptime
 
 
 def usage():
@@ -132,7 +159,7 @@ def main(argv):
         if data: # could be ``None`` if the input was invalid.
             #print >> outfile, format_cef(data)
             print format_cef(data)
-            print "-----" 
+            #print "-----" 
 
 
 if __name__ == '__main__':
