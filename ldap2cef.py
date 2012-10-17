@@ -11,15 +11,20 @@ from pprint import pprint
 
 ip_reg            = re.compile(r'ACCEPT from IP=(\d+\.\d+\.\d+\.\d+):')
 bind_name_reg     = re.compile(r'BIND dn="uid=(.*?),')
-                    #dn="mail=xxxx@mozilla.com,o=com,dc=mozilla"
-#user_reg          = re.compile(r'dn="mail=(.*?),')
 user_reg          = re.compile(r'mail=(.*?@mozilla.com)\)')
 login_outcome_reg = re.compile(r'err=(\d+) ')
-date_reg          = re.compile(r'(\w+)\s+(\d+)\s+(\d+):(\d+):(\d+)')
+date_reg          = re.compile(r'\w+\s+\d+\s+\d+:\d+:\d+')
+
+# Globals
+secsbefore = int(605) # time in seconds to search back
+#nowepoch = time.time()
+nowepoch = int(1349679902) # testing parameter
+startepoch = nowepoch - secsbefore
+
+print "start" + " " + str(startepoch)
 
 def get_connection_id(line):
     """"Parses the conn=xxxxx ID from the string of text.
-
     Returns None if no ID can be found.
     """
     left, middle, right = line.partition("conn=")
@@ -63,10 +68,9 @@ def parse_line_data(conn_id, blob):
 
     date_match = re.search(date_reg, blob)
     date_epoch = epoch(date_match.group(0))
-    if date_epoch:
-        ret_dat["date_end"] = date_epoch
-    #print date_match.group(0)
-    #print date_epoch
+    ret_dat["date_end"] = date_epoch
+    #if date_epoch >= startepoch:
+    #ret_dat["date_end"] = date_epoch
 
     return_anything = False # an easy to flip config knob
                             # for producing partially filled
@@ -95,8 +99,7 @@ def format_cef(data):
         end=data.get("date_end", "Unknown")
     )
 
-def epoch(mydate):
-    #print mydate
+def epoch(mydate): # converts standard syslog date stamp and returns epoch
   
     curryear = datetime.datetime.now().year
     date_reg = re.search(r'(\w+)\s+(\d+)\s+(\d+):(\d+):(\d+)', mydate)
@@ -106,11 +109,9 @@ def epoch(mydate):
     logmin = int(date_reg.group(4))
     logsec = int(date_reg.group(5))
    
-    #print curryear, logmonth, logday, loghour, logmin, logsec
-  
+    # -7 is pst time; change to your timezone 
     ltime = (curryear, logmonth, logday, loghour, logmin, logsec, 0, 0, -7)
     eptime = time.mktime(ltime)
-    #print eptime
     return eptime
 
 
@@ -143,6 +144,13 @@ def main(argv):
     #for line in open('../ldap-logs/ldap-big.log'):
     for line in open(inputfile):
         line = line.strip()
+
+        # Check to see if line is within startepoch
+        rawdate = re.match (r'(\w+\s+\d+\s+\d+:\d+:\d+)\s+.*', line)
+        sandate = int(epoch(rawdate.group(1)))
+        if startepoch >= sandate:
+            continue
+
         id = get_connection_id(line)
         if id:
             #print "got id " + id
