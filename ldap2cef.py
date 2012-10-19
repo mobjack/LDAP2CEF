@@ -11,7 +11,7 @@ from pprint import pprint
 
 ip_reg            = re.compile(r'ACCEPT from IP=(\d+\.\d+\.\d+\.\d+):')
 bind_name_reg     = re.compile(r'BIND dn="uid=(.*?),')
-user_reg          = re.compile(r'mail=(.*?@mozilla.com)\)')
+user_reg          = re.compile(r'mail=(.*?@mozilla\....)')
 login_outcome_reg = re.compile(r'err=(\d+) ')
 date_reg          = re.compile(r'\w+\s+\d+\s+\d+:\d+:\d+')
 
