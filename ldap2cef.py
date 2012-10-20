@@ -11,17 +11,17 @@ from pprint import pprint
 
 ip_reg            = re.compile(r'ACCEPT from IP=(\d+\.\d+\.\d+\.\d+):')
 bind_name_reg     = re.compile(r'BIND dn="uid=(.*?),')
-user_reg          = re.compile(r'mail=(.*?@mozilla\....)')
+user_reg          = re.compile(r'mail=(.*?@mozilla.*?\....)')
 login_outcome_reg = re.compile(r'err=(\d+) ')
 date_reg          = re.compile(r'\w+\s+\d+\s+\d+:\d+:\d+')
 
 # Globals
 secsbefore = int(605) # time in seconds to search back
-#nowepoch = time.time()
-nowepoch = int(1349679902) # testing parameter
+nowepoch = time.time()
+#nowepoch = int(1349679902) # testing parameter
 startepoch = nowepoch - secsbefore
 
-print "start" + " " + str(startepoch)
+#print "start" + " " + str(startepoch)
 
 def get_connection_id(line):
     """"Parses the conn=xxxxx ID from the string of text.
@@ -33,6 +33,8 @@ def get_connection_id(line):
     else:
         return None
 
+#def fix_user(userd):
+#    fetch_user = re.match(r'(.*?@
 
 def parse_line_data(conn_id, blob):
     """Parses specific pieces of data out of the text, returns it as a
@@ -65,6 +67,16 @@ def parse_line_data(conn_id, blob):
     login_outcome_match = re.search(login_outcome_reg, blob)
     if login_outcome_match:
         ret_dat["login_outcome"] = login_outcome_match.group(1)
+        #print login_outcome_match.group(1)
+        
+    if login_outcome_match.group(1) == 0:
+        ret_dat["login_name"] = "LDAP_SUCCESS"
+    elif login_outcome_match.group(1) == 49:     
+        ret_dat["login_name"] = str("LDAP_INVALID_CREDENTIALS")
+    elif login_outcome_match.group(1) == 50:    
+        ret_dat["login_name"] = str("LDAP_INSUFFICIENT_ACCESS")
+    else: 
+        ret_dat["login_name"] = str("LDAP_ERROR")
 
     date_match = re.search(date_reg, blob)
     date_epoch = epoch(date_match.group(0))
@@ -81,7 +93,7 @@ def parse_line_data(conn_id, blob):
     # Only return data if we found all the pieces
     # remember we added the conn_id, so total is 5
     #if(len(ret_dat.keys()) == 5):
-    if(len(ret_dat.keys()) == 6):
+    if(len(ret_dat.keys()) == 7):
         #print(ret_dat) #turn this on to see exactly what was extracted.
         return ret_dat    
     else:
@@ -90,9 +102,10 @@ def parse_line_data(conn_id, blob):
 def format_cef(data):
     """Returns an appropriately formatted CEF string."""
     # The format function replaces the {name} tokens with the values from data.
-    return """CEF:0|mozilla|openldap|1.0|{login_outcome}||6|src={ip} cs1={bind_name} suser={user} cs1Label=BindId cn1={conn_id} cn1Label=ConnId end={end}""".format(
+    return """CEF:0|mozilla|openldap|1.0|{login_outcome}|{login_name}|6|src={ip} cs1={bind_name} suser={user} cs1Label=BindId cn1={conn_id} cn2Label2=LdapId cn2={login_outcome} cn1Label=ConnId end={end}""".format(
         conn_id=data.get("conn_id", "NOCONN"),
         login_outcome=data.get("login_outcome", "not found"),
+        login_name=data.get("login_name", "not found"),
         ip=data.get("ip", ""),
         bind_name=data.get("bind_name", "None"),
         user=data.get("user", "Unknown"),
@@ -155,7 +168,7 @@ def main(argv):
         if id:
             #print "got id " + id
             connections[id] += " " + line + " "
-
+    print "Finished with file"
     # Setup the output file
     #outfile = open('cef.log', 'w+')
     
