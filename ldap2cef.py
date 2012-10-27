@@ -16,9 +16,9 @@ login_outcome_reg = re.compile(r'err=(\d+) ')
 date_reg          = re.compile(r'\w+\s+\d+\s+\d+:\d+:\d+')
 
 # Globals
-secsbefore = int(605) # time in seconds to search back
-nowepoch = time.time()
-#nowepoch = int(1349679902) # testing parameter
+secsbefore = int(100000) # time in seconds to search back
+#nowepoch = time.time()
+nowepoch = int(1351231200) # testing parameter
 startepoch = nowepoch - secsbefore
 
 #print "start" + " " + str(startepoch)
@@ -67,16 +67,18 @@ def parse_line_data(conn_id, blob):
     login_outcome_match = re.search(login_outcome_reg, blob)
     if login_outcome_match:
         ret_dat["login_outcome"] = login_outcome_match.group(1)
-        #print login_outcome_match.group(1)
-        
-    if login_outcome_match.group(1) == 0:
-        ret_dat["login_name"] = "LDAP_SUCCESS"
-    elif login_outcome_match.group(1) == 49:     
-        ret_dat["login_name"] = str("LDAP_INVALID_CREDENTIALS")
-    elif login_outcome_match.group(1) == 50:    
-        ret_dat["login_name"] = str("LDAP_INSUFFICIENT_ACCESS")
-    else: 
-        ret_dat["login_name"] = str("LDAP_ERROR")
+        login_num = int(login_outcome_match.group(1))
+        #print login_num
+
+        if login_num == 0:
+            ret_dat["login_name"] = "LDAP_SUCCESS"
+        elif login_num == 49:     
+            ret_dat["login_name"] = str("LDAP_INVALID_CREDENTIALS")
+        elif login_num == 50:    
+            ret_dat["login_name"] = str("LDAP_INSUFFICIENT_ACCESS")
+        else: 
+            ret_dat["login_name"] = str("LDAP_ERROR")
+
 
     date_match = re.search(date_reg, blob)
     date_epoch = epoch(date_match.group(0))
@@ -84,7 +86,7 @@ def parse_line_data(conn_id, blob):
     #if date_epoch >= startepoch:
     #ret_dat["date_end"] = date_epoch
 
-    return_anything = False # an easy to flip config knob
+    return_anything = False  # an easy to flip config knob
                             # for producing partially filled
                             # return data.  Could be a global.
     if return_anything:
@@ -162,12 +164,14 @@ def main(argv):
         rawdate = re.match (r'(\w+\s+\d+\s+\d+:\d+:\d+)\s+.*', line)
         sandate = int(epoch(rawdate.group(1)))
         if startepoch >= sandate:
+            #print "adding " + str(sandate)
             continue
 
         id = get_connection_id(line)
         if id:
             #print "got id " + id
             connections[id] += " " + line + " "
+
     print "Finished with file"
     # Setup the output file
     #outfile = open('cef.log', 'w+')
