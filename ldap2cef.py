@@ -33,8 +33,6 @@ def get_connection_id(line):
     else:
         return None
 
-#def fix_user(userd):
-#    fetch_user = re.match(r'(.*?@
 
 def parse_line_data(conn_id, blob):
     """Parses specific pieces of data out of the text, returns it as a
@@ -101,6 +99,15 @@ def parse_line_data(conn_id, blob):
     else:
         return None
 
+def parse_extra_data(conn_id, blob): 
+
+    ret_dat = {
+        "conn_id": conn_id
+    }
+    
+    tmp = None
+    
+
 def format_cef(data):
     """Returns an appropriately formatted CEF string."""
     # The format function replaces the {name} tokens with the values from data.
@@ -135,6 +142,7 @@ def usage():
 
 
 def main(argv):
+    print "Running..."
     inputfile = ''
     try:
        #opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
@@ -180,7 +188,19 @@ def main(argv):
     # process each group of log data.
     for conn_id, blob in connections.items():
         #print "{} : {}".format(conn_id, blob)
-        data = parse_line_data(conn_id, blob)
+	#if conn_id == "2637518":
+        #    print blob
+        #    sys.exit()
+        email_count  = blob.count('@mozilla') # skip it there's no user data there
+        if email_count == 0:
+            continue
+
+        result_count = blob.count('RESULT') # Might be a multi-connection log
+	if result_count >= 2 and email_count > 1:
+            data = parse_extra_data(conn_id, blob)
+        else:
+            data = parse_line_data(conn_id, blob)
+
         if data: # could be ``None`` if the input was invalid.
             #print >> outfile, format_cef(data)
             print format_cef(data)
