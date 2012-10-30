@@ -48,10 +48,7 @@ def parse_line_data(conn_id, blob):
     ip_match = re.search(ip_reg, blob)
     if ip_match:
         tmp = ip_match.group(1)
-        #print "parse_line_data#ip got " + tmp
         ret_dat["ip"] = tmp
-    #else:
-        #print "parse_line_data got no ip"
 
     bind_name_match = re.search(bind_name_reg, blob)
     if bind_name_match:
@@ -92,7 +89,6 @@ def parse_line_data(conn_id, blob):
  
     # Only return data if we found all the pieces
     # remember we added the conn_id, so total is 5
-    #if(len(ret_dat.keys()) == 5):
     if(len(ret_dat.keys()) == 7):
         #print(ret_dat) #turn this on to see exactly what was extracted.
         return ret_dat    
@@ -107,6 +103,21 @@ def parse_extra_data(conn_id, blob):
     
     tmp = None
     
+    ip_match = re.search(ip_reg, blob)
+    if ip_match:
+        tmp = ip_match.group(1)
+        ret_dat["ip"] = tmp
+
+    return_anything = False  # an easy to flip config knob
+    if return_anything:
+        return ret_dat
+
+    if(len(ret_dat.keys()) == 1):
+        #print(ret_dat) #turn this on to see exactly what was extracted.
+        return ret_dat    
+    else:
+        return None
+
 
 def format_cef(data):
     """Returns an appropriately formatted CEF string."""
@@ -194,10 +205,14 @@ def main(argv):
         email_count  = blob.count('@mozilla') # skip it there's no user data there
         if email_count == 0:
             continue
-
+     
         result_count = blob.count('RESULT') # Might be a multi-connection log
-	if result_count >= 2 and email_count > 1:
+
+        if result_count >= 2 and email_count > 1:
             data = parse_extra_data(conn_id, blob)
+            if conn_id == "2637518":
+                print blob
+                sys.exit()
         else:
             data = parse_line_data(conn_id, blob)
 
