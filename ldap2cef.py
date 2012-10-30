@@ -8,7 +8,6 @@ import getopt
 import time, datetime
 from pprint import pprint
 
-#conn_reg          = re.compile(r'conn=(\d+)\s+(\w\w)=(d+)\s+') 
 conn_reg          = re.compile(r'conn=(\d+)\s+(\w\w)=(\d+)\s+') 
 ip_reg            = re.compile(r'ACCEPT from IP=(\d+\.\d+\.\d+\.\d+):')
 bind_name_reg     = re.compile(r'BIND dn="uid=(.*?),')
@@ -34,6 +33,9 @@ def get_connection_id(line):
     #    return right.split()[0]
     #else:
     #    return None
+   
+    #conn_subid = 0
+
     conn_blob = re.search(conn_reg, line)
     conn_id = conn_blob.group(1)
     conn_type = conn_blob.group(2)
@@ -44,15 +46,11 @@ def get_connection_id(line):
 
     conn_ret = conn_id + "-" + conn_subid
 
-    if conn_id:
-        #print conn_id
-        #print conn_type
-        #print conn_subid
-        print conn_ret
-        print "^^"
-   
+    if conn_ret:
+        return conn_ret
+    else:
+        return None        
 
-    sys.exit()
 
 def parse_line_data(conn_id, blob):
     """Parses specific pieces of data out of the text, returns it as a
@@ -177,6 +175,7 @@ def usage():
 def main(argv):
     print "Running..."
     inputfile = ''
+    conn_index = {}
     try:
        #opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
        opts, args = getopt.getopt(argv,"hi:",["ifile="])
@@ -196,10 +195,14 @@ def main(argv):
     # Iterate through every line in the input file, gathering them in a 
     # dictionary keyed on the connection id.  The value will be the
     # concatenation of all related lines in one big blob.
-    #for line in open('ldap.log'):
-    #for line in open('../ldap-logs/ldap-big.log'):
     for line in open(inputfile):
         line = line.strip()
+
+        if line.count('slapd') == 0: # skip line if not slapd
+            continue  
+
+        if line.count('conn=') == 0: # skip line if conn= is not there 
+            continue  
 
         # Check to see if line is within startepoch
         rawdate = re.match (r'(\w+\s+\d+\s+\d+:\d+:\d+)\s+.*', line)
@@ -209,19 +212,27 @@ def main(argv):
             continue
 
         id = get_connection_id(line)
+
+        new_conn = re.search(ip_reg, line)
+        if new_conn:
+            idfull = id.partition("-")
+            rootid = idfull[0] + "-0"
+            conn_index[rootid] = line
+
+            #print rootid + " -> " + conn_index[rootid]
+ 
         if id:
             #print "got id " + id
             connections[id] += " " + line + " "
 
     print "Finished with file"
     # Setup the output file
-    #outfile = open('cef.log', 'w+')
+    # outfile = open('cef.log', 'w+')
     
     # Iterate through the key:values in the connections dictionary and
     # process each group of log data.
     for conn_id, blob in connections.items():
-        #print "{} : {}".format(conn_id, blob)
-	#if conn_id == "2637518":
+	    #if conn_id == "2637518":
         #    print blob
         #    sys.exit()
         email_count  = blob.count('@mozilla') # skip it there's no user data there
@@ -229,6 +240,9 @@ def main(argv):
             continue
      
         result_count = blob.count('RESULT') # Might be a multi-connection log
+
+        #print conn_id + "->" + blob
+        #sys.exit()
 
         if result_count >= 2 and email_count > 1:
             data = parse_extra_data(conn_id, blob)
