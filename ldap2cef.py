@@ -8,12 +8,14 @@ import getopt
 import time, datetime
 from pprint import pprint
 
-
+#conn_reg          = re.compile(r'conn=(\d+)\s+(\w\w)=(d+)\s+') 
+conn_reg          = re.compile(r'conn=(\d+)\s+(\w\w)=(\d+)\s+') 
 ip_reg            = re.compile(r'ACCEPT from IP=(\d+\.\d+\.\d+\.\d+):')
 bind_name_reg     = re.compile(r'BIND dn="uid=(.*?),')
 user_reg          = re.compile(r'mail=(.*?@mozilla.*?\....)')
 login_outcome_reg = re.compile(r'err=(\d+) ')
 date_reg          = re.compile(r'\w+\s+\d+\s+\d+:\d+:\d+')
+
 
 # Globals
 secsbefore = int(100000) # time in seconds to search back
@@ -27,12 +29,30 @@ def get_connection_id(line):
     """"Parses the conn=xxxxx ID from the string of text.
     Returns None if no ID can be found.
     """
-    left, middle, right = line.partition("conn=")
-    if right:
-        return right.split()[0]
-    else:
-        return None
+    #left, middle, right = line.partition("conn=")
+    #if right:
+    #    return right.split()[0]
+    #else:
+    #    return None
+    conn_blob = re.search(conn_reg, line)
+    conn_id = conn_blob.group(1)
+    conn_type = conn_blob.group(2)
+    conn_subid = conn_blob.group(3)
+   
+    if conn_type == "fd":
+        conn_subid = "0"
 
+    conn_ret = conn_id + "-" + conn_subid
+
+    if conn_id:
+        #print conn_id
+        #print conn_type
+        #print conn_subid
+        print conn_ret
+        print "^^"
+   
+
+    sys.exit()
 
 def parse_line_data(conn_id, blob):
     """Parses specific pieces of data out of the text, returns it as a
@@ -107,6 +127,8 @@ def parse_extra_data(conn_id, blob):
     if ip_match:
         tmp = ip_match.group(1)
         ret_dat["ip"] = tmp
+    
+    # find all the op=
 
     return_anything = False  # an easy to flip config knob
     if return_anything:
