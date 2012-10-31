@@ -213,12 +213,15 @@ def main(argv):
 
         id = get_connection_id(line)
 
+
+        """Add the id to dictionary for later use"""
         new_conn = re.search(ip_reg, line)
         if new_conn:
             idfull = id.partition("-")
             rootid = idfull[0] + "-0"
-            conn_index[rootid] = line
+            conn_index[rootid] = line # example 2892760-0:ACCEPT from IP
 
+            #print rootid
             #print rootid + " -> " + conn_index[rootid]
  
         if id:
@@ -244,17 +247,39 @@ def main(argv):
         #print conn_id + "->" + blob
         #sys.exit()
 
-        if result_count >= 2 and email_count > 1:
-            data = parse_extra_data(conn_id, blob)
-            if conn_id == "2637518":
-                print blob
-                sys.exit()
-        else:
-            data = parse_line_data(conn_id, blob)
+        #if result_count >= 2 and email_count > 1:
+        #    data = parse_extra_data(conn_id, blob)
+        #    if conn_id == "2637518":
+        #        print blob
+        #        sys.exit()
+        #else:
+        #    data = parse_line_data(conn_id, blob)
+
+        """Lookup if there's a connection id in the conn_index"""
+        root_part = conn_id.partition("-")
+        root_conn_id = root_part[0]
+        root_key = root_conn_id + "-0"
+ 
+        full_blob = str(blob)
+        root_blob = str(conn_index[root_key])
+        
+
+        #if conn_index.has_key(root_key):
+        #    root_blob = str(conn_index[root_key])
+        #    print full_blob
+        #else:
+        #    continue 
+
+        new_blob = root_blob + " " + full_blob
+
+
+        data = parse_line_data(root_conn_id, new_blob)
+
 
         if data: # could be ``None`` if the input was invalid.
             #print >> outfile, format_cef(data)
             print format_cef(data)
+            sys.exit()
             #print "-----" 
 
 
