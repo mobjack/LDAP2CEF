@@ -10,32 +10,24 @@ from pprint import pprint
 
 conn_reg          = re.compile(r'conn=(\d+)\s+(\w\w)=(\d+)\s+') 
 ip_reg            = re.compile(r'ACCEPT from IP=(\d+\.\d+\.\d+\.\d+):')
-bind_name_reg     = re.compile(r'BIND dn="uid=(.*?),')
+bind_name_reg     = re.compile(r'BIND\s+dn=\"(.*?)\"')
 user_reg          = re.compile(r'mail=(.*?@mozilla.*?\....)')
 login_outcome_reg = re.compile(r'err=(\d+) ')
 date_reg          = re.compile(r'\w+\s+\d+\s+\d+:\d+:\d+')
 
 
 # Globals
+domain = "@mozilla" # sets what domain to look for
 secsbefore = int(100000) # time in seconds to search back
 #nowepoch = time.time()
 nowepoch = int(1351231200) # testing parameter
 startepoch = nowepoch - secsbefore
 
-#print "start" + " " + str(startepoch)
 
 def get_connection_id(line):
     """"Parses the conn=xxxxx ID from the string of text.
     Returns None if no ID can be found.
     """
-    #left, middle, right = line.partition("conn=")
-    #if right:
-    #    return right.split()[0]
-    #else:
-    #    return None
-   
-    #conn_subid = 0
-
     conn_blob = re.search(conn_reg, line)
     conn_id = conn_blob.group(1)
     conn_type = conn_blob.group(2)
@@ -101,7 +93,7 @@ def parse_line_data(conn_id, blob):
     #if date_epoch >= startepoch:
     #ret_dat["date_end"] = date_epoch
 
-    return_anything = False  # an easy to flip config knob
+    return_anything = False # an easy to flip config knob
                             # for producing partially filled
                             # return data.  Could be a global.
     if return_anything:
@@ -109,7 +101,7 @@ def parse_line_data(conn_id, blob):
  
     # Only return data if we found all the pieces
     # remember we added the conn_id, so total is 5
-    if(len(ret_dat.keys()) == 6):
+    if(len(ret_dat.keys()) >= 4):
         #print(ret_dat) #turn this on to see exactly what was extracted.
         return ret_dat    
     else:
@@ -144,7 +136,7 @@ def parse_extra_data(conn_id, blob):
 def format_cef(data):
     """Returns an appropriately formatted CEF string."""
     # The format function replaces the {name} tokens with the values from data.
-    return """CEF:0|mozilla|openldap|1.0|{login_outcome}|{login_name}|6|src={ip} cs1={bind_name} suser={user} cs1Label=BindId cn1={conn_id} cn2Label2=LdapId cn2={login_outcome} cn1Label=ConnId end={end}""".format(
+    return """CEF:0|mozilla|openldap|1.0|{login_outcome}|{login_name}|6|src={ip} cs1=\"{bind_name}\" suser={user} cs1Label=BindId cn1={conn_id} cn2Label2=LdapId cn2={login_outcome} cn1Label=ConnId end={end}""".format(
         conn_id=data.get("conn_id", "NOCONN"),
         login_outcome=data.get("login_outcome", "not found"),
         login_name=data.get("login_name", "not found"),
@@ -240,22 +232,11 @@ def main(argv):
 	    #if conn_id == "2637518":
         #    print blob
         #    sys.exit()
-        email_count  = blob.count('@mozilla') # skip it there's no user data there
+        #email_count  = blob.count('@mozilla') # skip it there's no user data there
+        email_count  = blob.count(domain) # skip it there's no user data there
         if email_count == 0:
             continue
      
-        #result_count = blob.count('RESULT') # Might be a multi-connection log
-
-        #print conn_id + "->" + blob
-        #sys.exit()
-
-        #if result_count >= 2 and email_count > 1:
-        #    data = parse_extra_data(conn_id, blob)
-        #    if conn_id == "2637518":
-        #        print blob
-        #        sys.exit()
-        #else:
-        #    data = parse_line_data(conn_id, blob)
 
         """Lookup if there's a connection id in the conn_index"""
         root_part = conn_id.partition("-")
@@ -264,29 +245,21 @@ def main(argv):
  
         full_blob = str(blob)
 
-        try:
+        if root_key in conn_index.keys():
             root_blob = str(conn_index[root_key])
-        except:
+        else:	
             continue        
-        #print conn_id + "-> " +  root_blob
-
-        #if conn_index.has_key(root_key):
-        #    root_blob = str(conn_index[root_key])
-        #    print full_blob
-        #else:
-        #    continue 
 
         new_blob = root_blob + " " + full_blob
 
         #print root_conn_id + "->" + new_blob
-        #print "----"
         data = parse_line_data(root_conn_id, new_blob)
 
 
         if data: # could be ``None`` if the input was invalid.
             #print >> outfile, format_cef(data)
             print format_cef(data)
-            sys.exit()
+            #sys.exit()
             #print "-----" 
 
 
