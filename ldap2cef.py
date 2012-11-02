@@ -56,7 +56,9 @@ def parse_line_data(conn_id, blob):
     """Parses specific pieces of data out of the text, returns it as a
     dictionary.  Returns ``None`` if all data fields cannot be parsed.
     """
-    
+
+    #print conn_id + "->" + blob
+ 
     ret_dat = {
         "conn_id": conn_id
     }
@@ -107,7 +109,7 @@ def parse_line_data(conn_id, blob):
  
     # Only return data if we found all the pieces
     # remember we added the conn_id, so total is 5
-    if(len(ret_dat.keys()) == 7):
+    if(len(ret_dat.keys()) == 6):
         #print(ret_dat) #turn this on to see exactly what was extracted.
         return ret_dat    
     else:
@@ -242,7 +244,7 @@ def main(argv):
         if email_count == 0:
             continue
      
-        result_count = blob.count('RESULT') # Might be a multi-connection log
+        #result_count = blob.count('RESULT') # Might be a multi-connection log
 
         #print conn_id + "->" + blob
         #sys.exit()
@@ -261,8 +263,12 @@ def main(argv):
         root_key = root_conn_id + "-0"
  
         full_blob = str(blob)
-        root_blob = str(conn_index[root_key])
-        
+
+        try:
+            root_blob = str(conn_index[root_key])
+        except:
+            continue        
+        #print conn_id + "-> " +  root_blob
 
         #if conn_index.has_key(root_key):
         #    root_blob = str(conn_index[root_key])
@@ -272,7 +278,8 @@ def main(argv):
 
         new_blob = root_blob + " " + full_blob
 
-
+        #print root_conn_id + "->" + new_blob
+        #print "----"
         data = parse_line_data(root_conn_id, new_blob)
 
 
