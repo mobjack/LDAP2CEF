@@ -2,11 +2,14 @@
 
 # Standard Library Imports
 from collections import defaultdict
+from shutil import move
 import sys
 import re
 import getopt
 import time, datetime
+import random
 from pprint import pprint
+
 
 conn_reg          = re.compile(r'conn=(\d+)\s+(\w\w)=(\d+)\s+') 
 ip_reg            = re.compile(r'ACCEPT from IP=(\d+\.\d+\.\d+\.\d+):')
@@ -17,7 +20,13 @@ date_reg          = re.compile(r'\w+\s+\d+\s+\d+:\d+:\d+')
 
 
 # Globals
+out_dir = "../../ldap-logs/" # set the full path here "../" is not best
+out_rand = str(random.randint(1001,9999))
+out_file = out_dir + "ldap-" + out_rand + ".done"
+arc_dir = "../../arcsight/"
+
 domain = "@mozilla" # sets what domain to look for
+
 secsbefore = int(100000) # time in seconds to search back
 #nowepoch = time.time()
 nowepoch = int(1351231200) # testing parameter
@@ -49,8 +58,6 @@ def parse_line_data(conn_id, blob):
     dictionary.  Returns ``None`` if all data fields cannot be parsed.
     """
 
-    #print conn_id + "->" + blob
- 
     ret_dat = {
         "conn_id": conn_id
     }
@@ -90,8 +97,6 @@ def parse_line_data(conn_id, blob):
     date_match = re.search(date_reg, blob)
     date_epoch = epoch(date_match.group(0))
     ret_dat["date_end"] = date_epoch
-    #if date_epoch >= startepoch:
-    #ret_dat["date_end"] = date_epoch
 
     return_anything = False # an easy to flip config knob
                             # for producing partially filled
@@ -107,30 +112,6 @@ def parse_line_data(conn_id, blob):
     else:
         return None
 
-def parse_extra_data(conn_id, blob): 
-
-    ret_dat = {
-        "conn_id": conn_id
-    }
-    
-    tmp = None
-    
-    ip_match = re.search(ip_reg, blob)
-    if ip_match:
-        tmp = ip_match.group(1)
-        ret_dat["ip"] = tmp
-    
-    # find all the op=
-
-    return_anything = False  # an easy to flip config knob
-    if return_anything:
-        return ret_dat
-
-    if(len(ret_dat.keys()) == 1):
-        #print(ret_dat) #turn this on to see exactly what was extracted.
-        return ret_dat    
-    else:
-        return None
 
 
 def format_cef(data):
@@ -171,7 +152,6 @@ def main(argv):
     inputfile = ''
     conn_index = {}
     try:
-       #opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
        opts, args = getopt.getopt(argv,"hi:",["ifile="])
     except getopt.GetoptError:
        usage()
@@ -186,9 +166,11 @@ def main(argv):
     # Set up the main data structure, values will default to a new string.
     connections = defaultdict(str)
 
-    # Iterate through every line in the input file, gathering them in a 
-    # dictionary keyed on the connection id.  The value will be the
-    # concatenation of all related lines in one big blob.
+    """
+    Iterate through every line in the input file, gathering them in a 
+    dictionary keyed on the connection id.  The value will be the
+    concatenation of all related lines in one big blob.
+    """  
     for line in open(inputfile):
         line = line.strip()
 
@@ -214,25 +196,17 @@ def main(argv):
             idfull = id.partition("-")
             rootid = idfull[0] + "-0"
             conn_index[rootid] = line # example 2892760-0:ACCEPT from IP
-
-            #print rootid
-            #print rootid + " -> " + conn_index[rootid]
  
         if id:
             #print "got id " + id
             connections[id] += " " + line + " "
 
-    print "Finished with file"
     # Setup the output file
-    # outfile = open('cef.log', 'w+')
+    out = open(out_file, 'w+')
     
     # Iterate through the key:values in the connections dictionary and
     # process each group of log data.
     for conn_id, blob in connections.items():
-	    #if conn_id == "2637518":
-        #    print blob
-        #    sys.exit()
-        #email_count  = blob.count('@mozilla') # skip it there's no user data there
         email_count  = blob.count(domain) # skip it there's no user data there
         if email_count == 0:
             continue
@@ -252,16 +226,13 @@ def main(argv):
 
         new_blob = root_blob + " " + full_blob
 
-        #print root_conn_id + "->" + new_blob
         data = parse_line_data(root_conn_id, new_blob)
 
-
         if data: # could be ``None`` if the input was invalid.
-            #print >> outfile, format_cef(data)
-            print format_cef(data)
-            #sys.exit()
-            #print "-----" 
-
+            print >> out, format_cef(data)
+    
+    """Move to directory for arcsight processing"""
+    move(out_file,arc_dir)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
