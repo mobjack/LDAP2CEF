@@ -2,7 +2,7 @@ Hi Thanks for checking out my ldap log parser.  If you are looking at this
 you realize that openldap logs are a pain to parse to gain any useful information.
 
 Well I hope you can get some use out of this script.  Big thanks to biocode for the
-first verison.
+assistance.  biocode++
 
 What does it do?
 This script converts multiple lines of openldap logs into the cef format.
