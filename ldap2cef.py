@@ -20,16 +20,20 @@ date_reg          = re.compile(r'\w+\s+\d+\s+\d+:\d+:\d+')
 
 
 # Globals
-out_dir = "../../ldap-logs/" # set the full path here "../" is not best
-out_rand = str(random.randint(1001,9999))
-out_file = out_dir + "ldap-" + out_rand + ".done"
-arc_dir = "../../arcsight/"
+out_dir = "/var/log/syslog/systems/arcsight-cef/" # set the full path here "../" is not best
+out_rand = str(random.randint(1001,9999)) # used for file names
+out_file = out_dir + "ldap-" + out_rand + ".log" # this is the staging file
+done_file = out_file + ".done" # this file tells arcsight to start reading the file
+
 
 domain = "@mozilla" # sets what domain to look for
 
-secsbefore = int(100000) # time in seconds to search back
-#nowepoch = time.time()
-nowepoch = int(1351231200) # testing parameter
+#secsbefore = int(100000) #  Testing; time in seconds to search back
+#nowepoch = int(1351231200) # testing parameter
+
+secsbefore = int(605) # time in seconds to search back
+nowepoch = time.time()
+
 startepoch = nowepoch - secsbefore
 
 
@@ -37,20 +41,24 @@ def get_connection_id(line):
     """"Parses the conn=xxxxx ID from the string of text.
     Returns None if no ID can be found.
     """
-    conn_blob = re.search(conn_reg, line)
-    conn_id = conn_blob.group(1)
-    conn_type = conn_blob.group(2)
-    conn_subid = conn_blob.group(3)
-   
+
+    try:
+        conn_blob = re.search(conn_reg, line)
+        conn_id = conn_blob.group(1)
+        conn_type = conn_blob.group(2)
+        conn_subid = conn_blob.group(3)
+    except:
+        return "None"
+
     if conn_type == "fd":
         conn_subid = "0"
 
     conn_ret = conn_id + "-" + conn_subid
-
+   
     if conn_ret:
         return conn_ret
     else:
-        return None        
+        return "None"
 
 
 def parse_line_data(conn_id, blob):
@@ -110,16 +118,16 @@ def parse_line_data(conn_id, blob):
         #print(ret_dat) #turn this on to see exactly what was extracted.
         return ret_dat    
     else:
-        return None
+        return "None"
 
 
 
 def format_cef(data):
     """Returns an appropriately formatted CEF string."""
     # The format function replaces the {name} tokens with the values from data.
-    return """CEF:0|mozilla|openldap|1.0|{login_outcome}|{login_name}|6|src={ip} cs1=\"{bind_name}\" suser={user} cs1Label=BindId cn1={conn_id} cn2Label2=LdapId cn2={login_outcome} cn1Label=ConnId end={end}""".format(
+    return """CEF:0|mozilla|openldap|1.0|{login_outcome}|{login_name}|6|src={ip} cs1=\"{bind_name}\" suser={user} cs1Label=BindId cn1={conn_id} cn2Label2=LdapId cn2={login_outcome} cn2Label=LdapCode cn1Label=ConnId end={end}""".format(
         conn_id=data.get("conn_id", "NOCONN"),
-        login_outcome=data.get("login_outcome", "not found"),
+        login_outcome=data.get("login_outcome", "LDAP_EVENT"),
         login_name=data.get("login_name", "not found"),
         ip=data.get("ip", ""),
         bind_name=data.get("bind_name", "None"),
@@ -148,7 +156,7 @@ def usage():
 
 
 def main(argv):
-    print "Running..."
+    #print "Running..."
     inputfile = ''
     conn_index = {}
     try:
@@ -184,22 +192,26 @@ def main(argv):
         rawdate = re.match (r'(\w+\s+\d+\s+\d+:\d+:\d+)\s+.*', line)
         sandate = int(epoch(rawdate.group(1)))
         if startepoch >= sandate:
-            #print "adding " + str(sandate)
             continue
 
-        id = get_connection_id(line)
+        ldap_id = get_connection_id(line)
 
+
+        if ldap_id == "None": 
+            continue
 
         """Add the id to dictionary for later use"""
         new_conn = re.search(ip_reg, line)
+
+        #print new_conn
+
         if new_conn:
-            idfull = id.partition("-")
+            idfull = ldap_id.partition("-")
             rootid = idfull[0] + "-0"
             conn_index[rootid] = line # example 2892760-0:ACCEPT from IP
  
-        if id:
-            #print "got id " + id
-            connections[id] += " " + line + " "
+        if ldap_id:
+            connections[ldap_id] += " " + line + " "
 
     # Setup the output file
     out = open(out_file, 'w+')
@@ -232,7 +244,7 @@ def main(argv):
             print >> out, format_cef(data)
     
     """Move to directory for arcsight processing"""
-    move(out_file,arc_dir)
+    move(out_file,done_file)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
