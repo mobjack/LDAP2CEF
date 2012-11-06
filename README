@@ -1,0 +1,26 @@
+Hi Thanks for checking out my ldap log parser.  If you are looking at this 
+you realize that openldap logs are a pain to parse to gain any useful information.
+
+Well I hope you can get some use out of this script.  Big thanks to biocode for the
+first verison.
+
+What does it do?
+This script converts multiple lines of openldap logs into the cef format.
+
+Usage:
+ldap2cef.py -i <filename>
+
+Parameters you may need, see globals:
+* out_dir - is the directory where you want the cef files to be placed
+* domain - this parameter sets what domain to look for when scanning for login/logout
+* secsbefore - since I am scanning the log files every 5 minutes I set this to look back
+that time frame.
+ 
+
+ArcSight Connector Stuff:
+You can use a syslog connector or a flex connector.  I use a batch mode with a 
+"Regex Multiple Folder Follower".  There you will find a CEF file option.  
+
+Still to fix:
+I still have to fix the server name who is reporting the login.
+
