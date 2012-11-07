@@ -1,10 +1,8 @@
 #!/bin/sh
 
-CEF="./ldap2cef.py"
+CEF="/path-to-script/ldap2cef.py"
 
-for LOG in `/bin/ls -1 /var/log/syslog/systems/ldap*/*.log` 
+for LOG in `/bin/ls -1 path-to-logs/*.log` 
 do
-    #printf "$CEF -i $LOG\n"
     $CEF -i $LOG &
-    
 done
