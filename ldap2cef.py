@@ -100,6 +100,8 @@ def parse_line_data(conn_id, blob):
             ret_dat["login_name"] = str("LDAP_INVALID_CREDENTIALS")
         elif login_num == 50:    
             ret_dat["login_name"] = str("LDAP_INSUFFICIENT_ACCESS")
+        elif login_num == 65:    
+            ret_dat["login_name"] = str("LDAP_OBJECT_CLASS_VIOLATION")
         else: 
             ret_dat["login_name"] = str("LDAP_ERROR")
 
