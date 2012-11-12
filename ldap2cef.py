@@ -94,6 +94,8 @@ def parse_line_data(conn_id, blob):
 
         if login_num == 0:
             ret_dat["login_name"] = "LDAP_SUCCESS"
+        elif login_num == 32:     
+            ret_dat["login_name"] = str("LDAP_NO_SUCH_OBJECT")
         elif login_num == 49:     
             ret_dat["login_name"] = str("LDAP_INVALID_CREDENTIALS")
         elif login_num == 50:    
