@@ -17,7 +17,7 @@ bind_name_reg     = re.compile(r'BIND\s+dn=\"(.*?)\"')
 user_reg          = re.compile(r'mail=(.*?@mozilla.*?\....)')
 login_outcome_reg = re.compile(r'err=(\d+) ')
 date_reg          = re.compile(r'\w+\s+\d+\s+\d+:\d+:\d+')
-
+proxyAuth_reg     = re.compile(r'PROXYAUTHZ\s+dn=\"(.*?)\"')
 
 # Globals
 out_dir = "/var/log/syslog/systems/arcsight-cef/" # set the full path here "../" is not best
@@ -83,8 +83,11 @@ def parse_line_data(conn_id, blob):
 
     user_match = re.search(user_reg, blob)
     if user_match:
-    	#print user_match.group(1)
         ret_dat["user"] = user_match.group(1)
+    
+    proxy_match = re.search(proxyAuth_reg, blob)
+    if proxy_match:
+        ret_dat["proxy"] = proxy_match.group(1)
 
     login_outcome_match = re.search(login_outcome_reg, blob)
     if login_outcome_match:
@@ -131,13 +134,14 @@ def parse_line_data(conn_id, blob):
 def format_cef(data):
     """Returns an appropriately formatted CEF string."""
     # The format function replaces the {name} tokens with the values from data.
-    return """CEF:0|mozilla|openldap|1.0|{login_outcome}|{login_name}|6|src={ip} cs1=\"{bind_name}\" suser={user} cs1Label=BindId cn1={conn_id} cn2Label2=LdapId cn2={login_outcome} cn2Label=LdapCode cn1Label=ConnId end={end}""".format(
+    return """CEF:0|mozilla|openldap|1.0|{login_outcome}|{login_name}|6|src={ip} cs1=\"{bind_name}\" suser={user} cs1Label=BindId cs2={proxy} cs2Label=ProxyDn cn1={conn_id} cn2Label2=LdapId cn2={login_outcome} cn2Label=LdapCode cn1Label=ConnId end={end}""".format(
         conn_id=data.get("conn_id", "NOCONN"),
         login_outcome=data.get("login_outcome", "LDAP_EVENT"),
         login_name=data.get("login_name", "not found"),
         ip=data.get("ip", ""),
         bind_name=data.get("bind_name", "None"),
         user=data.get("user", "Unknown"),
+        proxy=data.get("proxy", "Not Found"),
         end=data.get("date_end", "Unknown")
     )
 
