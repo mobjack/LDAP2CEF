@@ -250,7 +250,7 @@ def main(argv):
 
         data = parse_line_data(root_conn_id, new_blob)
 
-        if data: # could be ``None`` if the input was invalid.
+        if data and data !="None": # could be ``None`` if the input was invalid.
             print >> out, format_cef(data)
     
     """Move to directory for arcsight processing"""
